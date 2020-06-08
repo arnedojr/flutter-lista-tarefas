@@ -34,6 +34,9 @@ class _HomeState extends State<Home> {
   }
 
   List _toDoList = [];
+  Map<String, dynamic> _lastRemoved;
+  int _lastRemovedPos;
+
   void _addToDo() {
     setState(() {
       Map<String, dynamic> newToDo = Map();
@@ -81,27 +84,63 @@ class _HomeState extends State<Home> {
             child: ListView.builder(
                 padding: EdgeInsets.only(top: 10.0),
                 itemCount: _toDoList.length,
-                itemBuilder: (context, index) {
-                  return CheckboxListTile(
-                    title: Text(_toDoList[index]["title"]),
-                    value: _toDoList[index]["ok"],
-                    secondary: CircleAvatar(
-                        child: Icon(
-                            _toDoList[index]["ok"] ? Icons.check : Icons.error
-                        )
-                    ),
-                    onChanged: (c) {
-                      setState(() {
-                        _toDoList[index]["ok"] = c;
-                        _saveData();
-                      });
-                    },
-                  );
-                },
+                itemBuilder: buildItem
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget buildItem(context, index) {
+    return Dismissible(
+      key: Key(DateTime.now().millisecondsSinceEpoch.toString()), // a chave é um número qualquer que nao pode ser repetido
+      background: Container(
+        color: Colors.red,
+        child: Align(
+          alignment: Alignment(-0.9, 0.0), //x vai de -1 a 1 e o y vai de -1 a 1
+          child: Icon(Icons.delete, color: Colors.white),
+        ),
+      ),
+      direction: DismissDirection.startToEnd,
+      child: CheckboxListTile(
+        title: Text(_toDoList[index]["title"]),
+        value: _toDoList[index]["ok"],
+        secondary: CircleAvatar(
+            child: Icon(
+                _toDoList[index]["ok"] ? Icons.check : Icons.error
+            )
+        ),
+        onChanged: (c) {
+          setState(() {
+            _toDoList[index]["ok"] = c;
+            _saveData();
+          });
+        },
+      ),   //aqui é: o que eu vou dar o Dismissible?? seria o meu text
+      onDismissed: (direction) { //irah fazer o dismissed na direcao que for colocado no metodo
+        setState(() {
+          _lastRemoved = Map.from(_toDoList[index]);
+          _lastRemovedPos = index;
+          _toDoList.removeAt(index);
+          _saveData();
+
+          final snackbar = SnackBar(
+            content: Text("Tarefa \"${_lastRemoved["title"]}\" removida!"),
+            action: SnackBarAction(
+              label: "Desfazer",
+              onPressed: () {
+                setState(() {
+                  _toDoList.insert(_lastRemovedPos, _lastRemoved);
+                  _saveData();
+                });
+              },
+            ),
+            duration: Duration(seconds: 3),
+          );
+          Scaffold.of(context).showSnackBar(snackbar);
+        });
+      },
     );
   }
 

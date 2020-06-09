@@ -48,6 +48,21 @@ class _HomeState extends State<Home> {
     });
   }
 
+  //pode ser usado o refresh para buscar dados no servidor para carregar uma lista, neste caso nao vai precisar do Future.delayed
+  Future<Null> _refresh() async {
+    await Future.delayed(Duration(seconds: 1));
+    setState(() {
+      //1 se a for maior que b, e -1 se b for maior que a; e 0 se a for igual a b
+      _toDoList.sort((a, b) {
+        if (a["ok"] && !b["ok"]) return 1;
+        else if(!a["ok"] && b["ok"]) return -1;
+        else return 0;
+      });
+      _saveData();
+    });
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,10 +96,13 @@ class _HomeState extends State<Home> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-                padding: EdgeInsets.only(top: 10.0),
-                itemCount: _toDoList.length,
-                itemBuilder: buildItem
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              child: ListView.builder(
+                  padding: EdgeInsets.only(top: 10.0),
+                  itemCount: _toDoList.length,
+                  itemBuilder: buildItem
+              ),
             ),
           ),
         ],
@@ -138,6 +156,7 @@ class _HomeState extends State<Home> {
             ),
             duration: Duration(seconds: 3),
           );
+          Scaffold.of(context).removeCurrentSnackBar();
           Scaffold.of(context).showSnackBar(snackbar);
         });
       },
